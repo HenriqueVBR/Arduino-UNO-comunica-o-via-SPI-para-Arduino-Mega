@@ -1,0 +1,226 @@
+#include <SPI.h>
+
+// Declaramos apenas o pino de seleção (SS)
+const int pinoSlaveSelect = 53; 
+
+int pinoLED = 34;
+
+const int PUL = 7;
+const int DIR = 6;
+const int ENB = 5;
+long TP = 500;
+long temPo2 = 0;
+int gira1 = 0;
+int gira2 = 0;
+int voltas = 0;
+
+
+const int BT2 = 31;
+const int BT3 = 32;
+const int BT4 = 33;
+
+//CONTORLE DA VELOCIDAD DO MOTOR
+int diminuiRV = 0;
+int aumentaRV = 0;
+
+// 1 segundo é igual a 1000000 microsegundos 
+// 0,5 segundos é igual a 500000 microsegundos 
+// 1 mili segundo é igual a 1000 microsegundos 
+
+//drive configurado com 3200 para uma volta completa usar apartir de 500 micro segundos ate 40 jeito simples sem aceleração e sem carga 
+
+ void setup()
+ {
+    // O pino SS precisa ser configurado como SAÍDA (OUTPUT)
+  pinMode(pinoSlaveSelect, OUTPUT);
+  
+  // Coloca o pino em HIGH para manter o Slave desativado no início
+  digitalWrite(pinoSlaveSelect, HIGH);
+  
+  // Inicializa o barramento SPI (configura automaticamente MOSI, MISO e SCK)
+  SPI.begin();
+  // Ajusta a velocidade do SPI para ser segura e estável (divisão por 16)
+  SPI.setClockDivider(SPI_CLOCK_DIV16); 
+
+  pinMode(pinoLED, OUTPUT);
+
+  pinMode(PUL, OUTPUT);
+  pinMode(DIR, OUTPUT);
+  pinMode(ENB, OUTPUT);
+    pinMode(BT1, INPUT);
+    pinMode(BT2, INPUT);
+    pinMode(BT3, INPUT);
+    pinMode(BT4, INPUT);
+ }  
+
+ void loop() 
+ {
+  int estadoBT1 = digitalRead(BT1); 
+  int estadoBT2 = digitalRead(BT2); 
+  int estadoBT3 = digitalRead(BT3); 
+  int estadoBT4 = digitalRead(BT4); 
+
+
+    //GIRAR PAR A DIREITA
+    if (estadoBT1 == 1)
+    {
+    //Serial.println("BT 1");
+    delayMicroseconds(100);
+        if (gira1 == 0)
+        {
+        //Serial.println("BT1+gira1");
+        gira1 = 1;
+        gira2 = 0;
+        delayMicroseconds(100);
+
+            digitalWrite(pinoLED, HIGH);
+            digitalWrite(pinoSlaveSelect, LOW);  // 1. Ativa o Arduino Uno (LOW)
+            SPI.transfer('E');                    // 2. Envia o caractere 'A'
+            digitalWrite(pinoSlaveSelect, HIGH); // 3. Desativa o Arduino Uno (HIGH) 
+            delay(100);
+            digitalWrite(pinoLED, LOW);
+        }
+    }
+
+    //GIRAR PAR A ESQUERDA
+    if (estadoBT2 == 1)
+    {
+    //Serial.println("BT 2");
+    delayMicroseconds(100);
+        if (gira2 == 0)
+        {
+        //Serial.println("BT2+gira2");
+        gira1 = 0;
+        gira2 = 1;
+        delayMicroseconds(100);
+
+            digitalWrite(pinoLED, HIGH);
+            digitalWrite(pinoSlaveSelect, LOW);  // 1. Ativa o Arduino Uno (LOW)
+            SPI.transfer('D');                    // 2. Envia o caractere 'A'
+            digitalWrite(pinoSlaveSelect, HIGH); // 3. Desativa o Arduino Uno (HIGH) 
+            delay(100);
+            digitalWrite(pinoLED, LOW);
+        }
+    }
+
+    //DESATIVA MOTOR 
+  if (estadoBT3 == 1)
+  {
+  //Serial.println("BOTAO3");
+  gira1 = 0;
+  gira2 = 0;
+  diminuiRV = 0;
+  aumentaRV = 0;
+  delay(100);
+        digitalWrite(pinoLED, HIGH);
+        digitalWrite(pinoSlaveSelect, LOW);  // 1. Ativa o Arduino Uno (LOW)
+        SPI.transfer('F');                    // 2. Envia o caractere 'A'
+        digitalWrite(pinoSlaveSelect, HIGH); // 3. Desativa o Arduino Uno (HIGH) 
+        delay(100);
+        digitalWrite(pinoLED, LOW);
+  }
+
+      //VELOCIDADE ALTA E BAIXA
+    if (estadoBT4 == 1)
+    {
+      //Serial.println("BOTAO4");
+      delay(2);
+      if (TP == 40)
+      {
+        //Serial.println("TP_DIMINUIR_VELOCIDADE");
+        diminuiRV = 1;
+        aumentaRV = 0;
+        delay(2);
+            digitalWrite(pinoLED, HIGH);
+            digitalWrite(pinoSlaveSelect, LOW);  // 1. Ativa o Arduino Uno (LOW)
+            SPI.transfer('B');                    // 2. Envia o caractere 'A'
+            digitalWrite(pinoSlaveSelect, HIGH); // 3. Desativa o Arduino Uno (HIGH) 
+            delay(100);
+            digitalWrite(pinoLED, LOW);
+      }
+      if (TP == 500)
+      {
+        //Serial.println("TP_AUMENTAR_VELOCIDADE");
+        aumentaRV = 1;
+        diminuiRV = 0;
+        delay(2);
+            digitalWrite(pinoLED, HIGH);
+            digitalWrite(pinoSlaveSelect, LOW);  // 1. Ativa o Arduino Uno (LOW)
+            SPI.transfer('V');                    // 2. Envia o caractere 'A'
+            digitalWrite(pinoSlaveSelect, HIGH); // 3. Desativa o Arduino Uno (HIGH) 
+            delay(100);
+            digitalWrite(pinoLED, LOW);
+      }
+
+    }
+
+        if (gira1 == 1)
+        {
+        Gira1();
+        }
+
+        if (gira2 == 1)
+        {
+        Gira2();
+        }
+}//////////////////////FINAL DO VOID LOOP///////////////////////////////////
+
+//GIRAR PARA A DIREITA 
+void Gira1()
+{
+  //Serial.println("Gira 1");
+  digitalWrite(DIR, HIGH);
+  digitalWrite(PUL, HIGH);
+  delayMicroseconds(TP);
+  digitalWrite(PUL, LOW);
+  delayMicroseconds(TP);
+
+  if (diminuiRV == 1 )
+  {
+    if (TP <= 499)
+    {
+    //Serial.println("TP_DIMINUIR_VELOCIDADE2");
+    TP = TP + 1;
+    }
+  }
+
+    if (aumentaRV == 1 )
+  {
+    if (TP >= 41)
+    {
+    //Serial.println("TP_AUMENTAR_VELOCIDADE2");
+    TP = TP - 1;
+    }
+  }
+
+}
+
+//GIRAR PARA A ESQUERDA
+ void Gira2()
+ {
+  //Serial.println("Gira 2");
+  digitalWrite(DIR, LOW);
+  digitalWrite(PUL, HIGH);
+  delayMicroseconds(TP);
+  digitalWrite(PUL, LOW);
+  delayMicroseconds(TP);
+
+  if (diminuiRV == 1 )
+  {
+    if (TP <= 499)
+    {
+    //Serial.println("TP_DIMINUIR_VELOCIDADE2");
+    TP = TP + 1;
+    }
+  }
+
+    if (aumentaRV == 1 )
+  {
+    if (TP >= 41)
+    {
+    //Serial.println("TP_AUMENTAR_VELOCIDADE2");
+    TP = TP - 1;
+    }
+  }
+
+}
