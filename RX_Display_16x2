@@ -1,0 +1,89 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+
+#include <SPI.h>
+// No Uno Slave, o pino SS de hardware é obrigatoriamente o 10
+const int pinoSS = 10; 
+
+char caractereRecebido;
+
+int valor = 3;
+int valor1 = 500;
+
+void setup() {
+  lcd.init();  // initialize the lcd
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();  //limpa da memoria todo o TEXTO
+
+  Serial.begin(9600);
+
+  // Configura o pino MISO como SAÍDA (para o Uno conseguir responder ao Mega)
+  pinMode(MISO, OUTPUT);
+  
+  // Configura o pino SS como ENTRADA (para o Uno escutar o comando do Mega)
+  pinMode(pinoSS, INPUT);
+  
+  // Ativa o modo Slave (Alvo) no registrador de controle do SPI (SPCR)
+  SPCR |= _BV(SPE);
+  
+  // (Opcional) Ativa interrupção para receber dados de forma automática
+  SPI.attachInterrupt(); 
+}
+
+
+  // Função que roda automaticamente sempre que o Mega envia um caractere
+  ISR (SPI_STC_vect)
+  {
+  char caractereRecebido = SPDR; // Lê o caractere do registrador de dados SPI
+  //Serial.print("Recebido: ");
+  //Serial.println(caractereRecebido);
+
+    if('E' == caractereRecebido)
+    {
+    valor = 1;
+    //valor1 = 40;
+    //Serial.println("A");
+    delay(15);
+    }
+
+      if('D' == caractereRecebido)
+      {
+      valor = 2;
+      //valor1 = 500;
+      //Serial.println("B");
+      delay(15);
+      }
+          if('F' == caractereRecebido)
+          {
+          valor = 3;
+          //valor1 = 500;
+          //Serial.println("B");
+          delay(15);
+          }
+              if('V' == caractereRecebido)
+              {
+              valor1 = 40;
+              delay(15);
+              }   
+                  if('B' == caractereRecebido)
+                  {
+                  valor1 = 500;
+                  delay(15);
+                  }         
+  }
+
+void loop() 
+{
+    lcd.setCursor(0, 0);
+    lcd.print("estado do BT ");
+    lcd.print(valor);
+    delay(300);
+    ///////////////////
+    lcd.setCursor(0, 1);
+    lcd.print("VALOR PULSO ");
+    lcd.print(valor1);
+    lcd.print(" ");
+    delay(500);
+}
